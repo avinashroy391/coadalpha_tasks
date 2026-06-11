@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>NovaCalc | Modern Calculator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      background: linear-gradient(145deg, #1a2639 0%, #2a3b4c 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, -apple-system, 'Roboto', sans-serif;
+      padding: 1.5rem;
+    }
+
+    /* Calculator container - glassmorphism + modern shadow */
+    .calculator {
+      max-width: 480px;
+      width: 100%;
+      background: rgba(22, 28, 40, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 3.5rem;
+      padding: 1.8rem;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      transition: all 0.2s ease;
+    }
+
+    /* Display screen area */
+    .display-screen {
+      background: #0f1219;
+      border-radius: 2.2rem;
+      padding: 1.5rem 1.8rem;
+      margin-bottom: 2rem;
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .expression {
+      min-height: 2.2rem;
+      font-size: 1.2rem;
+      color: #8e9aaf;
+      text-align: right;
+      word-wrap: break-word;
+      word-break: break-all;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.3px;
+    }
+
+    .current-input {
+      font-size: 3.2rem;
+      font-weight: 600;
+      color: #f0f3fa;
+      text-align: right;
+      margin-top: 0.35rem;
+      word-wrap: break-word;
+      word-break: break-all;
+      line-height: 1.2;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.1s;
+    }
+
+    /* Button grid layout */
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.9rem;
+    }
+
+    /* Universal button style */
+    .btn {
+      background: #1e2a3a;
+      border: none;
+      padding: 1.2rem 0;
+      font-size: 1.7rem;
+      font-weight: 500;
+      border-radius: 2rem;
+      color: #eef2ff;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.08s, background 0.2s, box-shadow 0.1s;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Special button styles */
+    .btn-operator {
+      background: #f39c12;
+      color: #1e272e;
+      font-weight: 700;
+      box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
+    }
+
+    .btn-operator:hover {
+      background: #e67e22;
+    }
+
+    .btn-equals {
+      background: #2ecc71;
+      color: #0a2f1f;
+      font-weight: 800;
+      font-size: 2rem;
+      box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+    }
+
+    .btn-equals:hover {
+      background: #27ae60;
+    }
+
+    .btn-clear {
+      background: #e74c3c;
+      color: white;
+      font-weight: 600;
+    }
+
+    .btn-clear:hover {
+      background: #c0392b;
+    }
+
+    .btn-delete {
+      background: #7f8c8d;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .btn-delete:hover {
+      background: #95a5a6;
+    }
+
+    .btn-number {
+      background: #2c3e50;
+    }
+
+    .btn-number:hover {
+      background: #34495e;
+    }
+
+    .btn-zero {
+      grid-column: span 2;
+    }
+
+    /* footer tiny hint for keyboard */
+    .keyboard-hint {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.7rem;
+      color: #7c8ea0;
+      letter-spacing: 0.3px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.2);
+      padding-top: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .calculator {
+        padding: 1.2rem;
+      }
+      .btn {
+        padding: 0.9rem 0;
+        font-size: 1.4rem;
+      }
+      .current-input {
+        font-size: 2.4rem;
+      }
+      .expression {
+        font-size: 1rem;
+      }
+      .buttons-grid {
+        gap: 0.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="calculator">
+  <div class="display-screen">
+    <div class="expression" id="expressionDisplay"></div>
+    <div class="current-input" id="currentDisplay">0</div>
+  </div>
+
+  <div class="buttons-grid">
+    <!-- Row 1 -->
+    <button class="btn btn-clear" data-action="clear">AC</button>
+    <button class="btn btn-delete" data-action="delete">⌫</button>
+    <button class="btn btn-operator" data-op="/">÷</button>
+    <button class="btn btn-operator" data-op="*">×</button>
+
+    <!-- Row 2 -->
+    <button class="btn btn-number" data-num="7">7</button>
+    <button class="btn btn-number" data-num="8">8</button>
+    <button class="btn btn-number" data-num="9">9</button>
+    <button class="btn btn-operator" data-op="-">−</button>
+
+    <!-- Row 3 -->
+    <button class="btn btn-number" data-num="4">4</button>
+    <button class="btn btn-number" data-num="5">5</button>
+    <button class="btn btn-number" data-num="6">6</button>
+    <button class="btn btn-operator" data-op="+">+</button>
+
+    <!-- Row 4 -->
+    <button class="btn btn-number" data-num="1">1</button>
+    <button class="btn btn-number" data-num="2">2</button>
+    <button class="btn btn-number" data-num="3">3</button>
+    <button class="btn btn-equals" data-action="equals">=</button>
+
+    <!-- Row 5 : zero and decimal -->
+    <button class="btn btn-number btn-zero" data-num="0">0</button>
+    <button class="btn btn-number" data-num=".">.</button>
+  </div>
+  <div class="keyboard-hint">
+    ⌨️ Keyboard support: 0-9  .  +  -  *  /  Enter ( = )  Backspace  Escape (AC)
+  </div>
+</div>
+
+<script>
+  // ---------- DOM elements ----------
+  const currentDisplaySpan = document.getElementById('currentDisplay');
+  const expressionSpan = document.getElementById('expressionDisplay');
+
+  // Calculator state
+  let currentInput = "0";      
+  let previousInput = "";      
+  let operator = null;         
+  let waitingForOperand = false;   
+  let expressionString = "";   
+
+  // Helper: update UI
+  function updateDisplay() {
+    let displayValue = currentInput === "" ? "0" : currentInput;
+    if (displayValue === "-0") displayValue = "0";
+    currentDisplaySpan.innerText = displayValue;
+    
+    if (expressionString !== "") {
+      expressionSpan.innerText = expressionString;
+    } else if (operator && previousInput !== "") {
+      expressionSpan.innerText = `${formatNumberForDisplay(previousInput)} ${symbolMapper(operator)}`;
+    } else {
+      expressionSpan.innerText = "";
+    }
+  }
+
+  // Map operators to display symbols
+  function symbolMapper(op) {
+    if (op === '/') return '÷';
+    if (op === '*') return '×';
+    if (op === '-') return '−';
+    if (op === '+') return '+';
+    return op;
+  }
+
+  // Format expression decimals safely
+  function formatNumberForDisplay(numStr) {
+    if (!numStr) return "";
+    let num = parseFloat(numStr);
+    if (isNaN(num)) return numStr;
+    if (Number.isInteger(num)) return num.toString();
+    let decimalPlaces = numStr.includes('.') ? numStr.split('.')[1].length : 0;
+    if (decimalPlaces > 8) {
+      return num.toFixed(8).replace(/\.?0+$/, '');
+    }
+    return numStr;
+  }
+
+  // Safely compute calculations and counter float artifacts (e.g. 0.1 + 0.2)
+  function safeCalculateResult(leftStr, rightStr, op) {
+    const leftNum = parseFloat(leftStr);
+    const rightNum = parseFloat(rightStr);
+    if (isNaN(leftNum) || isNaN(rightNum)) return null;
+    
+    let result;
+    switch (op) {
+      case '+': result = leftNum + rightNum; break;
+      case '-': result = leftNum - rightNum; break;
+      case '*': result = leftNum * rightNum; break;
+      case '/': 
+        if (rightNum === 0) return null; // Prevent zero division crash
+        result = leftNum / rightNum;
+        break;
+      default: return null;
+    }
+    
+    if (!isFinite(result)) return null;
+    
+    // Fix JS float inaccuracies and trim trailing zeros
+    let rounded = parseFloat(result.toFixed(10));
+    if (isNaN(rounded)) return null;
+    return rounded.toString();
+  }
+
+  // Trigger evaluation
+  function performEquality() {
+    if (operator === null || previousInput === "" || waitingForOperand) return false;
+    
+    const result = safeCalculateResult(previousInput, currentInput, operator);
+    if (result === null) {
+      currentInput = "Error";
+      previousInput = "";
+      operator = null;
+      waitingForOperand = false;
+      expressionString = "";
+      updateDisplay();
+      return true;
+    }
+    
+    expressionString = `${formatNumberForDisplay(previousInput)} ${symbolMapper(operator)} ${formatNumberForDisplay(currentInput)} =`;
+    currentInput = result;
+    previousInput = "";
+    operator = null;
+    waitingForOperand = false;
+    updateDisplay();
+    return true;
+  }
+
+  // Digits input routing
+  function inputDigit(digit) {
+    if (currentInput === "Error") clearAll();
+    
+    if (waitingForOperand) {
+      currentInput = digit;
+      waitingForOperand = false;
+    } else {
+      if (currentInput === "0") {
+        currentInput = digit;
+      } else {
+        if (currentInput.replace(/\./g, '').length >= 15) return; // Prevent text overflow
+        currentInput += digit;
+      }
+    }
+    updateDisplay();
+  }
+  
+  // Decimal dot validation
+  function inputDecimal() {
+    if (currentInput === "Error") clearAll();
+    if (waitingForOperand) {
+      currentInput = "0.";
+      waitingForOperand = false;
+      updateDisplay();
+      return;
+    }
+    if (!currentInput.includes('.')) {
+      currentInput += '.';
+    }
+    updateDisplay();
+  }
+  
+  // Reset calculator state (AC)
+  function clearAll() {
+    currentInput = "0";
+    previousInput = "";
+    operator = null;
+    waitingForOperand = false;
+    expressionString = "";
+    updateDisplay();
+  }
+  
+  // Delete action (Backspace)
+  function deleteLast() {
+    if (currentInput === "Error") {
+      clearAll();
+      return;
+    }
+    if (waitingForOperand) return;
+    
+    if (currentInput.length > 1) {
+      currentInput = currentInput.slice(0, -1);
+      if (currentInput === "" || currentInput === "-") currentInput = "0";
+    } else {
+      currentInput = "0";
+    }
+    updateDisplay();
+  }
+  
+  // Setup arithmetic operator handling
+  function setOperator(op) {
+    if (currentInput === "Error") clearAll();
+    
+    // Logic loop for operator chaining (e.g. 5 + 5 + 5)
+    if (operator !== null && !waitingForOperand && previousInput !== "") {
+      const result = safeCalculateResult(previousInput, currentInput, operator);
+      if (result === null) {
+        currentInput = "Error";
+        previousInput = "";
+        operator = null;
+        waitingForOperand = false;
+        expressionString = "";
+        updateDisplay();
+        return;
+      }
+      previousInput = result;
+      currentInput = result;
+    } else {
+      if (!waitingForOperand) {
+        previousInput = currentInput;
+      }
+    }
+    
+    operator = op;
+    waitingForOperand = true;
+    expressionString = `${formatNumberForDisplay(previousInput)} ${symbolMapper(operator)}`;
+    updateDisplay();
+  }
+
+  // Keyboard handler mapping
+  function handleKeyboard(e) {
+    const key = e.key;
+    const controlKeys = ['/', '*', '+', '-', 'Enter', 'Backspace', 'Escape', '.', 'Delete', '='];
+    if (controlKeys.includes(key) || (key >= '0' && key <= '9')) {
+      e.preventDefault();
+    }
+    
+    if (/^[0-9]$/.test(key)) inputDigit(key);
+    else if (key === '.') inputDecimal();
+    else if (key === '+') setOperator('+');
+    else if (key === '-') setOperator('-');
+    else if (key === '*') setOperator('*');
+    else if (key === '/') setOperator('/');
+    else if (key === 'Enter' || key === '=') performEquality();
+    else if (key === 'Backspace') deleteLast();
+    else if (key === 'Escape') clearAll();
+  }
+  
+  // Single pass click listeners binding
+  function attachButtonEvents() {
+    document.querySelectorAll('[data-num]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.getAttribute('data-num');
+        if (val === '.') inputDecimal();
+        else inputDigit(val);
+      });
+    });
+    
+    document.querySelectorAll('[data-op]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setOperator(btn.getAttribute('data-op'));
+      });
+    });
+    
+    document.querySelector('[data-action="clear"]').addEventListener('click', clearAll);
+    document.querySelector('[data-action="delete"]').addEventListener('click', deleteLast);
+    document.querySelector('[data-action="equals"]').addEventListener('click', performEquality);
+  }
+  
+  // App Entry Point
+  function init() {
+    attachButtonEvents();
+    window.addEventListener('keydown', handleKeyboard);
+    updateDisplay();
+  }
+  
+  // Run on startup
+  init();
+</script>
+</body>
+</html>
